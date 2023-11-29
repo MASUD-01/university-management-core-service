@@ -135,6 +135,21 @@ model Room {
   @@map("rooms")
 }
 
+// model Course {
+//   id                     String                  @id @default(uuid())
+//   title                  String
+//   code                   String
+//   credits                Int                     @default(0)
+//   createdAt              DateTime                @default(now())
+//   updatedAt              DateTime                @updatedAt
+//   preRequisite           CourseToPrerequisite[]  @relation("CourseToPrerequisite")
+//   preRequisiteFor        CourseToPrerequisite[]  @relation("PrerequisiteToCourse")
+//   faculties              CourseFaculty[]
+//   offeredCourses         OfferedCourse[]
+//   studentEnrolledCourses StudentEnrolledCourse[]
+
+//   @@map("courses")
+// }
 model Course {
   id                     String                  @id @default(uuid())
   title                  String
@@ -142,8 +157,8 @@ model Course {
   credits                Int                     @default(0)
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
-  preRequisite           CoursePrerequisite[]    @relation("CourseToPrerequisite") //ei column ta holo ei course ta korar jonno kon course ta korar lagbe,mane etar preRequist course
-  preRequisiteFor        CoursePrerequisite[]    @relation("PrerequisiteToCourse") // ei column holo ei course ta kono course er preRequist hisabe bebohar hoyeche ki na, mane eta kar preRequist
+  preRequisite           CourseToPrerequisite[]  @relation("CourseToPrerequisite")
+  preRequisiteFor        CourseToPrerequisite[]  @relation("PrerequisiteToCourse")
   faculties              CourseFaculty[]
   offeredCourses         OfferedCourse[]
   studentEnrolledCourses StudentEnrolledCourse[]
@@ -152,7 +167,7 @@ model Course {
 }
 
 //ei table ta tokhoni tairi hobe jokhon akta course create korar somoy preRequist dibe
-model CoursePrerequisite {
+model CourseToPrerequisite {
   courseId       String //ei id course create korar por pabo
   preRequisiteId String //ei id amra body te pathabo,etao akta course eri id jeta amara onno course er preRequist hisabe dissi
   course         Course @relation(fields: [courseId], references: [id], name: "CourseToPrerequisite") // kon course Ta
@@ -332,24 +347,6 @@ enum ExamType {
   FINAL
 }
 
-model StudentSemesterPayment {
-  id                 String           @id @default(uuid())
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  studentId          String
-  student            Student          @relation(fields: [studentId], references: [id])
-  academicSemesterId String
-  academicSemester   AcademicSemester @relation(fields: [academicSemesterId], references: [id])
-
-  fullPaymentAmount    Int?           @default(0)
-  partialPaymentAmount Int?           @default(0)
-  totalDueAmount       Int?           @default(0)
-  totalPaidAmount      Int?           @default(0)
-  paymentStatus        PaymentStatus? @default(PENDING)
-
-  @@map("student_semester_payments")
-}
-
 model StudentSemesterRegistration {
   id                     String               @id @default(uuid())
   isConfirmed            Boolean?             @default(false)
@@ -378,4 +375,45 @@ enum WeekDays {
   WEDNESDAY
   THURSDAY
   FRIDAY
+}
+
+//-----------------------
+model StudentSemesterPayment {
+  id                 String           @id @default(uuid())
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  studentId          String
+  student            Student          @relation(fields: [studentId], references: [id])
+  academicSemesterId String
+  academicSemester   AcademicSemester @relation(fields: [academicSemesterId], references: [id])
+
+  fullPaymentAmount             Int?                            @default(0)
+  partialPaymentAmount          Int?                            @default(0)
+  totalDueAmount                Int?                            @default(0)
+  totalPaidAmount               Int?                            @default(0)
+  paymentStatus                 PaymentStatus?                  @default(PENDING)
+  studentSemesterPaymentHistory StudentSemesterPaymentHistory[]
+
+  @@map("student_semester_payments")
+}
+
+model StudentSemesterPaymentHistory {
+  id                       String                 @id @default(uuid())
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  studentSemesterPayment   StudentSemesterPayment @relation(fields: [studentSemesterPaymentId], references: [id])
+  studentSemesterPaymentId String
+
+  transactionId String
+  dueAmount     Int            @default(0)
+  paidAmount    Int            @default(0)
+  paymentMethod PayementMethod @default(ONLINE)
+  isPaid        Boolean?       @default(false)
+
+  @@map("student_semester_payament_histories")
+}
+
+enum PayementMethod {
+  CASH
+  ONLINE
 }
