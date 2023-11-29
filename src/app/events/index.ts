@@ -1,7 +1,9 @@
+import initFacultyEvents from '../modules/faculty/faculty.events';
 import initStudentEvents from '../modules/student/student.events';
 
-const subscribesToEvents = () => {
+const subscribeToEvents = () => {
   initStudentEvents();
+  initFacultyEvents();
 };
 
-export default subscribesToEvents;
+export default subscribeToEvents;
