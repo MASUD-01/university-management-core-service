@@ -1,3 +1,26 @@
+ER Diagram
+Module 35: ER Diagram
+
+Module-36: ER Diagram
+
+Module-37: ER Diagram
+
+Module-38: ER Diagram
+
+Module-39: ER Diagram
+
+Module-41: ER Diagram
+
+Module-42: ER Diagram
+
+Module-43: ER Diagram
+
+You can generate an ERD with Prisma schema using the website: https://prismaliser.app/
+
+# API Documentation
+
+https://i.ibb.co/Ln2FttV/university-management-core-service-module-1.png
+
 # search and filter bolte ki bujhay ?
 
 search: specific field(author:'sailog') er value er kisu word include kore kina ,
@@ -134,7 +157,7 @@ sortBy && sortOrder ? { [sortBy]: sortOrder } : { createdAt: "desc" },
     },
     },
 
-2.               where: {
+2.                where: {
     AND|NOT| OR: [
     {
     title: {

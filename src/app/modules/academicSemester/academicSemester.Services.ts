@@ -9,40 +9,48 @@ import { RedisClient } from '../../../shared/redis';
 import {
   AcademicSemesterSearchAbleFields,
   EVENT_ACADEMIC_SEMESTER_CREATED,
+  EVENT_ACADEMIC_SEMESTER_DELETED,
   EVENT_ACADEMIC_SEMESTER_UPDATED,
   academicSemesterTitleCodeMapper,
 } from './academicSemester.constant';
-import { IAcademicSemesterFilterRequest } from './academicSemester.interface';
+import { IAcademicSemeterFilterRequest } from './academicSemester.interface';
 
-const insertintoDB = async (
-  data: AcademicSemester
+const insertIntoDB = async (
+  academicSemesterData: AcademicSemester
 ): Promise<AcademicSemester> => {
-  if (academicSemesterTitleCodeMapper[data.title] !== data.code) {
+  if (
+    academicSemesterTitleCodeMapper[academicSemesterData.title] !==
+    academicSemesterData.code
+  ) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid Semester Code');
   }
   const result = await prisma.academicSemester.create({
-    data,
+    data: academicSemesterData,
   });
 
-  //46.2 video
+  console.log(result, 'result core');
+
   if (result) {
     await RedisClient.publish(
       EVENT_ACADEMIC_SEMESTER_CREATED,
       JSON.stringify(result)
     );
   }
+
   return result;
 };
 
 const getAllFromDB = async (
-  filters: IAcademicSemesterFilterRequest,
+  filters: IAcademicSemeterFilterRequest,
   options: IPaginationOptions
 ): Promise<IGenericResponse<AcademicSemester[]>> => {
   const { page, limit, skip } = paginationHelpers.calculatePagination(options);
-  const { searchTerm, ...filtersData } = filters;
-  const andConditions = [];
+  const { searchTerm, ...filterData } = filters;
+  console.log(options);
+  const andConditons = [];
+
   if (searchTerm) {
-    andConditions.push({
+    andConditons.push({
       OR: AcademicSemesterSearchAbleFields.map(field => ({
         [field]: {
           contains: searchTerm,
@@ -52,59 +60,71 @@ const getAllFromDB = async (
     });
   }
 
-  if (Object.keys(filtersData).length > 0) {
-    andConditions.push({
-      AND: Object.keys(filtersData).map(key => ({
+  if (Object.keys(filterData).length > 0) {
+    andConditons.push({
+      AND: Object.keys(filterData).map(key => ({
         [key]: {
-          equals: (filtersData as any)[key],
+          equals: (filterData as any)[key],
         },
       })),
     });
   }
-  const whereConditions: Prisma.AcademicSemesterWhereInput =
-    andConditions.length > 0 ? { AND: andConditions } : {};
-  const reuslt = await prisma.academicSemester.findMany({
-    where: whereConditions,
+
+  /**
+   * person = { name: 'fahim' }
+   * name = person[name]
+   *
+   */
+
+  const whereConditons: Prisma.AcademicSemesterWhereInput =
+    andConditons.length > 0 ? { AND: andConditons } : {};
+
+  const result = await prisma.academicSemester.findMany({
+    where: whereConditons,
     skip,
     take: limit,
     orderBy:
       options.sortBy && options.sortOrder
         ? {
-            [options?.sortBy]: options.sortOrder,
+            [options.sortBy]: options.sortOrder,
           }
         : {
             createdAt: 'desc',
           },
   });
+
   const total = await prisma.academicSemester.count();
+
   return {
     meta: {
       total,
-      page: 1,
-      limit: 10,
+      page,
+      limit,
     },
-    data: reuslt,
+    data: result,
   };
 };
+
 const getDataById = async (id: string): Promise<AcademicSemester | null> => {
   const result = await prisma.academicSemester.findUnique({
     where: {
       id,
     },
   });
+
   return result;
 };
+
 const updateOneInDB = async (
   id: string,
   payload: Partial<AcademicSemester>
-): Promise<AcademicSemester | null> => {
+): Promise<AcademicSemester> => {
   const result = await prisma.academicSemester.update({
     where: {
       id,
     },
     data: payload,
   });
-
   if (result) {
     await RedisClient.publish(
       EVENT_ACADEMIC_SEMESTER_UPDATED,
@@ -113,9 +133,27 @@ const updateOneInDB = async (
   }
   return result;
 };
-export const AcademicSemesterServices = {
-  insertintoDB,
+
+const deleteByIdFromDB = async (id: string): Promise<AcademicSemester> => {
+  const result = await prisma.academicSemester.delete({
+    where: {
+      id,
+    },
+  });
+
+  if (result) {
+    await RedisClient.publish(
+      EVENT_ACADEMIC_SEMESTER_DELETED,
+      JSON.stringify(result)
+    );
+  }
+  return result;
+};
+
+export const AcademicSemesterService = {
+  insertIntoDB,
   getAllFromDB,
   getDataById,
   updateOneInDB,
+  deleteByIdFromDB,
 };

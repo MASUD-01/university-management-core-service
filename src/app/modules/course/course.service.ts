@@ -15,9 +15,10 @@ import {
 
 const insertIntoDB = async (data: ICourseCreateData): Promise<any> => {
   const { preRequisiteCourses, ...courseData } = data;
-  /*   why use Transaction and RollBack here?
-ans: course er create korar upor coursePrerequisite table create depend kore, tai jodi thik vabe duiti kaje somporno hoy tai ei method use kori
-*/
+
+  console.log('course data', courseData);
+  console.log('pre requisite course data: ', preRequisiteCourses);
+
   const newCourse = await prisma.$transaction(async transactionClient => {
     const result = await transactionClient.course.create({
       data: courseData,
@@ -28,16 +29,19 @@ ans: course er create korar upor coursePrerequisite table create depend kore, ta
     }
 
     if (preRequisiteCourses && preRequisiteCourses.length > 0) {
-      for (let index = 0; index < preRequisiteCourses.length; index++) {
-        const createPrerequisite =
-          await transactionClient.coursePrerequisite.create({
-            data: {
-              courseId: result.id,
-              preRequisiteId: preRequisiteCourses[index].courseId,
-            },
-          });
-        console.log(createPrerequisite);
-      }
+      await asyncForEach(
+        preRequisiteCourses,
+        async (preRequisiteCourse: IPrerequisiteCourseRequest) => {
+          const createPrerequisite =
+            await transactionClient.courseToPrerequisite.create({
+              data: {
+                courseId: result.id,
+                preRequisiteId: preRequisiteCourse.courseId,
+              },
+            });
+          console.log(createPrerequisite);
+        }
+      );
     }
     return result;
   });
@@ -50,7 +54,7 @@ ans: course er create korar upor coursePrerequisite table create depend kore, ta
       include: {
         preRequisite: {
           include: {
-            preRequiste: true,
+            preRequisite: true,
           },
         },
         preRequisiteFor: {
@@ -66,6 +70,7 @@ ans: course er create korar upor coursePrerequisite table create depend kore, ta
 
   throw new ApiError(httpStatus.BAD_REQUEST, 'Unable to create course');
 };
+
 const getAllFromDB = async (
   filters: ICourseFilterRequest,
   options: IPaginationOptions
@@ -103,7 +108,7 @@ const getAllFromDB = async (
     include: {
       preRequisite: {
         include: {
-          preRequiste: true,
+          preRequisite: true,
         },
       },
       preRequisiteFor: {
@@ -135,6 +140,7 @@ const getAllFromDB = async (
     data: result,
   };
 };
+
 const getByIdFromDB = async (id: string): Promise<Course | null> => {
   const result = await prisma.course.findUnique({
     where: {
@@ -143,7 +149,7 @@ const getByIdFromDB = async (id: string): Promise<Course | null> => {
     include: {
       preRequisite: {
         include: {
-          preRequiste: true,
+          preRequisite: true,
         },
       },
       preRequisiteFor: {
@@ -155,32 +161,13 @@ const getByIdFromDB = async (id: string): Promise<Course | null> => {
   });
   return result;
 };
-const deleteByIdFromDB = async (id: string): Promise<Course> => {
-  await prisma.coursePrerequisite.deleteMany({
-    where: {
-      OR: [
-        {
-          courseId: id,
-        },
-        {
-          preRequisiteId: id,
-        },
-      ],
-    },
-  });
 
-  const result = await prisma.course.delete({
-    where: {
-      id,
-    },
-  });
-  return result;
-};
 const updateOneInDB = async (
   id: string,
   payload: ICourseCreateData
 ): Promise<Course | null> => {
   const { preRequisiteCourses, ...courseData } = payload;
+
   await prisma.$transaction(async transactionClient => {
     const result = await transactionClient.course.update({
       where: {
@@ -194,21 +181,20 @@ const updateOneInDB = async (
     }
 
     if (preRequisiteCourses && preRequisiteCourses.length > 0) {
-      //jegula isDeleted:true segula nilam
       const deletePrerequisite = preRequisiteCourses.filter(
         coursePrerequisite =>
           coursePrerequisite.courseId && coursePrerequisite.isDeleted
       );
-      //jegula notun add korbe isDeleted:false segula nilam
+
       const newPrerequisite = preRequisiteCourses.filter(
         coursePrerequisite =>
           coursePrerequisite.courseId && !coursePrerequisite.isDeleted
       );
-      //1st isDeleted:true gula delete korlam database theke
+
       await asyncForEach(
         deletePrerequisite,
         async (deletePreCourse: IPrerequisiteCourseRequest) => {
-          await transactionClient.coursePrerequisite.deleteMany({
+          await transactionClient.courseToPrerequisite.deleteMany({
             where: {
               AND: [
                 {
@@ -222,11 +208,11 @@ const updateOneInDB = async (
           });
         }
       );
-      //2nd notun gula add korlam, jegula isDeleted:false
+
       await asyncForEach(
         newPrerequisite,
         async (insertPrerequisite: IPrerequisiteCourseRequest) => {
-          await transactionClient.coursePrerequisite.create({
+          await transactionClient.courseToPrerequisite.create({
             data: {
               courseId: id,
               preRequisiteId: insertPrerequisite.courseId,
@@ -246,7 +232,7 @@ const updateOneInDB = async (
     include: {
       preRequisite: {
         include: {
-          preRequiste: true,
+          preRequisite: true,
         },
       },
       preRequisiteFor: {
@@ -259,7 +245,30 @@ const updateOneInDB = async (
 
   return responseData;
 };
-const assignFaculty = async (
+
+const deleteByIdFromDB = async (id: string): Promise<Course> => {
+  await prisma.courseToPrerequisite.deleteMany({
+    where: {
+      OR: [
+        {
+          courseId: id,
+        },
+        {
+          preRequisiteId: id,
+        },
+      ],
+    },
+  });
+
+  const result = await prisma.course.delete({
+    where: {
+      id,
+    },
+  });
+  return result;
+};
+
+const assignFaculies = async (
   id: string,
   payload: string[]
 ): Promise<CourseFaculty[]> => {
@@ -278,6 +287,7 @@ const assignFaculty = async (
       faculty: true,
     },
   });
+
   return assignFacultiesData;
 };
 
@@ -305,12 +315,13 @@ const removeFaculties = async (
 
   return assignFacultiesData;
 };
+
 export const CourseService = {
   insertIntoDB,
-  updateOneInDB,
   getAllFromDB,
   getByIdFromDB,
   deleteByIdFromDB,
-  assignFaculty,
+  updateOneInDB,
+  assignFaculies,
   removeFaculties,
 };

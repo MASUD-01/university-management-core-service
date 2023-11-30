@@ -1,8 +1,9 @@
 import express from 'express';
-// import auth from '../../middlewares/auth';
+import { ENUM_USER_ROLE } from '../../../enums/user';
+import auth from '../../middlewares/auth';
 import validateRequest from '../../middlewares/validateRequest';
 import { OfferedCourseSectionController } from './offeredCourseSection.controller';
-import { OfferedCourseSectionValidation } from './offeredCourseSection.validations';
+import { OfferedCourseSectionValidation } from './offeredCourseSection.validation';
 
 const router = express.Router();
 
@@ -10,23 +11,23 @@ router.get('/', OfferedCourseSectionController.getAllFromDB);
 router.get('/:id', OfferedCourseSectionController.getByIdFromDB);
 
 router.post(
-  '/',
-  validateRequest(OfferedCourseSectionValidation.create),
-  // auth(ENUM_USER_ROLE.SUPER_ADMIN, ENUM_USER_ROLE.ADMIN),
-  OfferedCourseSectionController.insertIntoDB
+    '/',
+    validateRequest(OfferedCourseSectionValidation.create),
+    auth(ENUM_USER_ROLE.SUPER_ADMIN, ENUM_USER_ROLE.ADMIN),
+    OfferedCourseSectionController.insertIntoDB
 );
 
 router.patch(
-  '/:id',
-  validateRequest(OfferedCourseSectionValidation.update),
-  // auth(ENUM_USER_ROLE.SUPER_ADMIN, ENUM_USER_ROLE.ADMIN),
-  OfferedCourseSectionController.updateOneInDB
+    '/:id',
+    validateRequest(OfferedCourseSectionValidation.update),
+    auth(ENUM_USER_ROLE.SUPER_ADMIN, ENUM_USER_ROLE.ADMIN),
+    OfferedCourseSectionController.updateOneInDB
 );
 
 router.delete(
-  '/:id',
-  // auth(ENUM_USER_ROLE.SUPER_ADMIN, ENUM_USER_ROLE.ADMIN),
-  OfferedCourseSectionController.deleteByIdFromDB
+    '/:id',
+    auth(ENUM_USER_ROLE.SUPER_ADMIN, ENUM_USER_ROLE.ADMIN),
+    OfferedCourseSectionController.deleteByIdFromDB
 );
 
 export const offeredCourseSectionRoutes = router;

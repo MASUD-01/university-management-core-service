@@ -1,57 +1,72 @@
 import { AcademicSemester } from '@prisma/client';
-import { RequestHandler } from 'express';
+import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import catchAsync from '../../../shared/catchAsync';
 import pick from '../../../shared/pick';
 import sendResponse from '../../../shared/sendResponse';
-import { AcademicSemesterServices } from './academicSemester.Services';
-import { academicSemesterFilterAbleFileds } from './academicSemester.constant';
+import { AcademicSemesterService } from './academicSemester.Services';
+import { AcademicSemesterFilterAbleFileds } from './academicSemester.constant';
 
-const insertintoDB: RequestHandler = catchAsync(async (req, res) => {
-  const result = await AcademicSemesterServices.insertintoDB(req.body);
+const insertIntoDB = catchAsync(async (req: Request, res: Response) => {
+  const result = await AcademicSemesterService.insertIntoDB(req.body);
   sendResponse<AcademicSemester>(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Academic Semester Created',
+    message: 'Academic Semster Created!!',
     data: result,
   });
 });
 
-const getAllFromDB: RequestHandler = catchAsync(async (req, res) => {
-  const filters = pick(req.query, academicSemesterFilterAbleFileds);
+const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
+  const filters = pick(req.query, AcademicSemesterFilterAbleFileds);
   const options = pick(req.query, ['limit', 'page', 'sortBy', 'sortOrder']);
-  const result = await AcademicSemesterServices.getAllFromDB(filters, options);
+
+  const result = await AcademicSemesterService.getAllFromDB(filters, options);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Academic Semester data fetched',
+    message: 'Academic Semster data fetched!!',
     meta: result.meta,
+    data: result.data,
+  });
+});
+
+const getDataById = catchAsync(async (req: Request, res: Response) => {
+  const result = await AcademicSemesterService.getDataById(req.params.id);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Academic Semster data fetched!!',
     data: result,
   });
 });
 
-const getDataById: RequestHandler = catchAsync(async (req, res) => {
-  const result = await AcademicSemesterServices.getDataById(req.params.id);
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'Academic Semester data fetched',
-    data: result,
-  });
-});
-const updateOneInDB = catchAsync(async (req, res) => {
+const updateOneInDB = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const result = await AcademicSemesterServices.updateOneInDB(id, req.body);
+  const result = await AcademicSemesterService.updateOneInDB(id, req.body);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Academic Semester updated successfully',
+    message: 'Academic Semster updated successfully',
     data: result,
   });
 });
-export const AcademicSemesterController = {
-  insertintoDB,
+
+const deleteByIdFromDB = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await AcademicSemesterService.deleteByIdFromDB(id);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Academic Semster delete successfully',
+    data: result,
+  });
+});
+
+export const AcademicSemeterController = {
+  insertIntoDB,
   getAllFromDB,
   getDataById,
   updateOneInDB,
+  deleteByIdFromDB,
 };
