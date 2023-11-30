@@ -139,7 +139,7 @@ sortBy && sortOrder ? { [sortBy]: sortOrder } : { createdAt: "desc" },
     },
     },
 
-2.                  where: {
+2.                   where: {
     AND|NOT| OR: [
     {
     title: {
@@ -213,3 +213,23 @@ sortBy && sortOrder ? { [sortBy]: sortOrder } : { createdAt: "desc" },
 
 });
 };
+
+# credentials
+
+# Environment variables declared in this file are automatically made available to Prisma.
+
+# See the documentation for more detail: https://pris.ly/d/prisma-schema#accessing-environment-variables-from-the-schema
+
+# Prisma supports the native connection string format for PostgreSQL, MySQL, SQLite, SQL Server, MongoDB and CockroachDB.
+
+# See the documentation for all the connection string options: https://pris.ly/d/connection-strings
+
+NODE_ENV=development
+PORT=3002
+DATABASE_URL="postgresql://postgres:123456@localhost:5432/core-service?schema=public"
+JWT_SECRET=programming-hero #auth service e same secret key
+
+# Redis---14/09/2023
+
+REDIS_URL='redis://localhost:6379'
+REDIS_TOKEN_EXPIRES_IN='846000'
